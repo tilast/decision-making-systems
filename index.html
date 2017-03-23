@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script type="text/javascript" src="./knockout-min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  </head>
+  <body>
+
+  <a href="#" data-bind="click: $root.setQuestionsTab" style="border-bottom: 1px dashed #ccc">Questions</a>
+  <a href="#" data-bind="click: $root.setExpertsTab" style="border-bottom: 1px dashed #ccc">Experts</a>
+  <a href="#" data-bind="click: $root.setStatisticsTab" style="border-bottom: 1px dashed #ccc">Statistics</a>
+
+  <div class="questions-tab" data-bind="visible: $root.tab() === 'questions'">
+    <h2>Questions</h2>
+    <form class="question-item col-sm-6">
+      <div class="form-group">
+        <input class="form-control" type="text" name="question-text" value="" placeholder="Question" data-bind='value: tempQuestion, valueUpdate: "afterkeydown"'>
+      </div>
+
+      <ul data-bind="foreach: tempAnswers">
+        <li><span data-bind="text: $data"></span> <a href="#" data-bind="click: $root.removeTempAnswer">remove</a></li>
+      </ul>
+      <br/>
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="form-group">
+            <input class="form-control" type="text" data-bind='value: tempAnswer, valueUpdate: "afterkeydown"' name="question-text" value="" placeholder="Answer">
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <button type="button" name="add-answer" data-bind="click: $root.addTempAnswer" class="btn btn-default">Add Answer</button>
+        </div>
+      </div>
+
+      <br>
+      <button type="button" name="add-answer" data-bind="click: $root.saveQuestion" class="btn btn-default">Save Question</button>
+    </form>
+
+    <div class="col-sm-6">
+      <ul data-bind="foreach: questions">
+        <li>
+          <span data-bind="text: $data.question"> </span>:
+          <br>
+          <ul data-bind="foreach: $data.answers">
+            <li><span data-bind="text: $data"> </span></li><br>
+          </ul>
+        </li>
+        <hr>
+      </ul>
+    </div>
+  </div>
+
+
+  <div class="experts" data-bind="visible: $root.tab() === 'experts'" style="margin-left: 20px;">
+    <h2>Experts</h2>
+    <div class="row">
+      <div class="form-group col-sm-6">
+        <input type="text" placholder="Please input name" data-bind="value: expertName" class="form-control"><br>
+      </div>
+
+      <ul data-bind="foreach: questions" class="col-sm-6">
+        <li>
+          <span data-bind="text: $data.question"> </span>:
+          <br>
+          <ul data-bind="foreach: $data.answers">
+            <li><span data-bind="text: $data"> </span> <input type="radio" data-bind="value: $data, checked: $parent.checked, attr: { name: $parent.id }"></li><br>
+          </ul>
+        </li>
+        <br>
+      </ul>
+    </div>
+
+    <div class="form-group">
+      <button data-bind="click: $root.submitQuiz" class="btn btn-success">Submit quiz</button>
+      <span data-bind="text: $root.submitQuizMessage"></span>
+    </div>
+  </div>
+
+  <div class="statistics" data-bind="visible: $root.tab() === 'statistics'">
+    <h2>Statistics</h2>
+
+    <ul data-bind="foreach: competences">
+      <li>
+        </span> <span data-bind="text: $data.name"></span>
+        <br>
+        Competense: <span data-bind="text: $data.competence * 100 + '%'"></span>
+      </li>
+      <hr>
+    </ul>
+  </div>
+
+
+    <script type="text/javascript">
+      function ViewModel() {
+        var self = this;
+
+        // TABS
+        this.tab = ko.observable('questions');
+        this.setQuestionsTab = function() {
+          self.tab('questions');
+        };
+        this.setExpertsTab = function() {
+          self.tab('experts');
+        };
+        this.setStatisticsTab = function() {
+          self.tab('statistics');
+        };
+
+        // QUESTIONS
+        this.questions = ko.observableArray([{ id: +new Date(), question: 'Q1', answers: ['a1', 'a2', 'a3'], checked: ko.observable('') }]);
+        this.tempQuestion = ko.observable('');
+        this.saveQuestion = function() {
+          self.questions.push({
+            id: +new Date(),
+            question: self.tempQuestion(),
+            answers: self.tempAnswers(),
+            checked: ko.observable('')
+          });
+          self.tempQuestion('');
+          self.tempAnswer('');
+          self.tempAnswers([]);
+        };
+        this.tempAnswers = ko.observableArray([]);
+        this.tempAnswer = ko.observable('');
+        this.addTempAnswer = function() {
+          self.tempAnswers.push(self.tempAnswer());
+          self.tempAnswer('');
+        };
+        this.removeTempAnswer = function(taRemove) {
+          self.tempAnswers.splice(self.tempAnswers.indexOf(taRemove), 1);
+        };
+
+        // EXPERTS
+        this.experts = ko.observableArray([]);
+        this.competences = ko.observableArray([]);
+        this.expertName = ko.observable('');
+        this.radioSelectedOptionValue = ko.observable('');
+        this.submitQuizMessage = ko.observable('');
+        this.submitQuiz = function() {
+          self.experts.push({
+            id: +new Date(),
+            name: self.expertName(),
+            answers: self.questions().map(
+              (q) => ({
+                question_id: q.id,
+                answer_index: q.answers.findIndex((a) => a == q.checked())
+              })
+            ),
+            competence: ko.observable('')
+          });
+          self.expertName('');
+          self.questions().forEach((q) => {
+            q.checked('');
+          });
+          self.submitQuizMessage('successfully added your answers');
+          setTimeout(() => {
+            self.submitQuizMessage('');
+          }, 1000);
+          console.log(self.experts());
+          self.competences(computeExpertCompetence(self.experts()));
+          console.log(self.competences());
+        };
+      };
+
+      ko.applyBindings(new ViewModel);
+
+      // BUSINESS LOGIC
+      function computeExpertCompetence(experts) {
+        var questions = aggregateAnswers(experts);
+        var competence_arr = [];
+        experts.forEach(function(expert) {
+        	var totalCompetence = 0;
+        	expert.answers.forEach(function(answer) {
+          	var q_id = answer.question_id;
+            var a_index = answer.answer_index;
+          	var q = questions[q_id];
+            totalCompetence += q.answers_scores[a_index] / q.total;
+          });
+          competence_arr.push({id: expert.id, name: expert.name, competence: totalCompetence / expert.answers.length});
+        });
+        return competence_arr;
+      }
+
+      function aggregateAnswers(experts) {
+      	var agg_questions = {};
+      	experts.forEach(function(expert) {
+        	expert.answers.forEach(function(answer) {
+          	var q_id = answer.question_id;
+            var a_index = answer.answer_index;
+          	var q = agg_questions[q_id];
+
+            if (q == undefined) {
+            	q = {
+              	id: q_id,
+                answers_scores: {},
+                total: 0
+              }
+            }
+
+            if (q.answers_scores[a_index] == undefined) {
+            	q.answers_scores[a_index] = 0;
+            }
+
+            q.answers_scores[a_index]++;
+            q.total++;
+
+            agg_questions[q_id] = q;
+
+          });
+        });
+        return agg_questions;
+      }
+    </script>
+  </body>
+</html>
