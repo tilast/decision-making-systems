@@ -20,13 +20,14 @@
       </div>
 
       <ul data-bind="foreach: tempAnswers">
-        <li><span data-bind="text: $data"></span> <a href="#" data-bind="click: $root.removeTempAnswer">remove</a></li>
+        <li><span data-bind="text: $data.answer"></span>(<span data-bind="text: $data.coef"></span>) <a href="#" data-bind="click: $root.removeTempAnswer">remove</a></li>
       </ul>
       <br/>
       <div class="row">
         <div class="col-sm-6">
           <div class="form-group">
             <input class="form-control" type="text" data-bind='value: tempAnswer, valueUpdate: "afterkeydown"' name="question-text" value="" placeholder="Answer">
+            <input class="form-control" type="text" data-bind='value: tempCoef, valueUpdate: "afterkeydown"' name="question-text" value="" placeholder="Answer">
           </div>
         </div>
         <div class="col-sm-6">
@@ -44,7 +45,7 @@
           <span data-bind="text: $data.question"> </span>:
           <br>
           <ul data-bind="foreach: $data.answers">
-            <li><span data-bind="text: $data"> </span></li><br>
+            <li><span data-bind="text: $data.answer"></span>(<span data-bind="text: $data.coef"></span>)</li><br>
           </ul>
         </li>
         <hr>
@@ -65,7 +66,7 @@
           <span data-bind="text: $data.question"> </span>:
           <br>
           <ul data-bind="foreach: $data.answers">
-            <li><span data-bind="text: $data"> </span> <input type="radio" data-bind="value: $data, checked: $parent.checked, attr: { name: $parent.id }"></li><br>
+            <li><span data-bind="text: $data.answer"> </span> <input type="radio" data-bind="value: $data.answer, checked: $parent.checked, attr: { name: $parent.id }"></li><br>
           </ul>
         </li>
         <br>
@@ -109,7 +110,7 @@
         };
 
         // QUESTIONS
-        this.questions = ko.observableArray([{ id: +new Date(), question: 'Q1', answers: ['a1', 'a2', 'a3'], checked: ko.observable('') }]);
+        this.questions = ko.observableArray([{ id: +new Date(), question: 'Q1', answers: [{answer: 'a1', coef: 0.5, origCoef: 5}, {answer: 'a2', coef: 0.2, origCoef: 2}, {answer: 'a3', coef: 0.3, origCoef: 3}], checked: ko.observable('') }]);
         this.tempQuestion = ko.observable('');
         this.saveQuestion = function() {
           self.questions.push({
@@ -124,12 +125,27 @@
         };
         this.tempAnswers = ko.observableArray([]);
         this.tempAnswer = ko.observable('');
+        this.tempCoef = ko.observable(0);
         this.addTempAnswer = function() {
-          self.tempAnswers.push(self.tempAnswer());
+          self.tempAnswers.push({answer: self.tempAnswer(), coef: +self.tempCoef(), origCoef: +self.tempCoef()});
+          self.recalculateCoefs();
           self.tempAnswer('');
+          self.tempCoef(0);
         };
         this.removeTempAnswer = function(taRemove) {
-          self.tempAnswers.splice(self.tempAnswers.indexOf(taRemove), 1);
+          var indx = self.tempAnswers().findIndex(function(answr) {
+            return answr.answer == taRemove.answer;
+          });
+          self.tempAnswers.splice(indx, 1);
+        };
+
+        this.recalculateCoefs = function() {
+          var sum = self.tempAnswers().reduce(function(a, e) { return +e.origCoef + a; }, 0);
+          var newAnswers = self.tempAnswers().map(function(answer) {
+            answer.coef = answer.origCoef / sum;
+            return answer;
+          });
+          self.tempAnswers(newAnswers);
         };
 
         // EXPERTS
@@ -145,11 +161,12 @@
             answers: self.questions().map(
               (q) => ({
                 question_id: q.id,
-                answer_index: q.answers.findIndex((a) => a == q.checked())
+                answer_index: q.answers.findIndex((a) => a.answer == q.checked())
               })
             ),
             competence: ko.observable('')
           });
+          debugger
           self.expertName('');
           self.questions().forEach((q) => {
             q.checked('');
