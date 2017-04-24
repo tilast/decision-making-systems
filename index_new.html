@@ -110,7 +110,8 @@
         };
 
         // QUESTIONS
-        this.questions = ko.observableArray([{ id: +new Date(), question: 'Q1', answers: [{answer: 'a1', coef: 0.5, origCoef: 5}, {answer: 'a2', coef: 0.2, origCoef: 2}, {answer: 'a3', coef: 0.3, origCoef: 3}], checked: ko.observable('') }]);
+        this.questions = ko.observableArray([
+          { id: +new Date(), question: 'Q1', answers: [{answer: 'a1', coef: 0.5, origCoef: 5}, {answer: 'a2', coef: 0.2, origCoef: 2}, {answer: 'a3', coef: 0.3, origCoef: 3}], checked: ko.observable('') }, { id: +new Date() + 100, question: 'Q2', answers: [{answer: 'a33', coef: 0.5, origCoef: 5}, {answer: 'a22', coef: 0.2, origCoef: 2}, {answer: 'a123', coef: 0.3, origCoef: 3}], checked: ko.observable('') }]);
         this.tempQuestion = ko.observable('');
         this.saveQuestion = function() {
           self.questions.push({
@@ -166,7 +167,7 @@
             ),
             competence: ko.observable('')
           });
-
+          // debugger
           self.expertName('');
           self.questions().forEach((q) => {
             q.checked('');
@@ -176,7 +177,7 @@
             self.submitQuizMessage('');
           }, 1000);
           console.log(self.experts());
-          self.competences(computeExpertCompetence(self.experts()));
+          self.competences(computeExpertCompetence(self.questions(), self.experts()));
           console.log(self.competences());
         };
       };
@@ -184,51 +185,129 @@
       ko.applyBindings(new ViewModel);
 
       // BUSINESS LOGIC
-      function computeExpertCompetence(experts) {
-        var questions = aggregateAnswers(experts);
-        var competence_arr = [];
-        experts.forEach(function(expert) {
-        	var totalCompetence = 0;
-        	expert.answers.forEach(function(answer) {
-          	var q_id = answer.question_id;
-            var a_index = answer.answer_index;
-          	var q = questions[q_id];
-            totalCompetence += q.answers_scores[a_index] / q.total;
-          });
-          competence_arr.push({id: expert.id, name: expert.name, competence: totalCompetence / expert.answers.length});
+      function computeExpertCompetence(questions, input_experts) {
+
+        // debug
+        console.log("args: ")
+        console.log(questions);
+        console.log(input_experts);
+
+        var experts = [];
+        input_experts.forEach(function(expert) {
+          a_map = {}
+          expert.answers.forEach(function(answer) {
+            a_map[answer.question_id] = answer;
+          })
+          experts.push({
+            "name": expert.name,
+            "answers": a_map
+          })
         });
-        return competence_arr;
-      }
 
-      function aggregateAnswers(experts) {
-      	var agg_questions = {};
-      	experts.forEach(function(expert) {
-        	expert.answers.forEach(function(answer) {
-          	var q_id = answer.question_id;
-            var a_index = answer.answer_index;
-          	var q = agg_questions[q_id];
+        // debugger;
 
-            if (q == undefined) {
-            	q = {
-              	id: q_id,
-                answers_scores: {},
-                total: 0
+        var n = experts.length;
+        T_total = createMatrix(n, n);
+        T_total_sum = 0;
+
+        questions.forEach(function(question) {
+
+          var T = createMatrix(n, n);
+          var nonZeroMin = 1000000000000;
+          for (var i = 0; i < n; i++) {
+            for (var j = 0; j < n; j++) {
+              if (i > j) {
+                var expert_i_answer_index = experts[i].answers[question.id].answer_index;
+                var expert_i_coef = question.answers[expert_i_answer_index].coef;
+
+                var expert_j_answer_index = experts[j].answers[question.id].answer_index;
+                var expert_j_coef = question.answers[expert_j_answer_index].coef;
+
+                debugger;
+
+                var diff = Math.abs(expert_i_coef - expert_j_coef);
+
+                if (diff != 0 && diff < nonZeroMin) {
+                  nonZeroMin = diff;
+                }
+
+                T[i][j] = diff;
               }
             }
+          }
 
-            if (q.answers_scores[a_index] == undefined) {
-            	q.answers_scores[a_index] = 0;
+          debugger;
+
+          var T_inv = createMatrix(n, n);
+          for (var i = 0; i < n; i++) {
+            for (var j = 0; j < n; j++) {
+              if (i > j) {
+                var value = T[i][j];
+
+                if (value != 0) {
+                  T_inv[i][j] = 1 / value;
+                } else {
+                  T_inv[i][j] = 1 / nonZeroMin
+                }
+
+                T_total[i][j] += T_inv[i][j];
+                T_total_sum += T_inv[i][j];
+              }
             }
-
-            q.answers_scores[a_index]++;
-            q.total++;
-
-            agg_questions[q_id] = q;
-
-          });
+          }
         });
-        return agg_questions;
+
+        // debugger;
+
+        var competenceArr = createCompetenceArray(input_experts);
+
+        // debugger;
+
+        console.log(JSON.stringify(T_total));
+
+        for (var i = 0; i < n; i++) {
+          for (var j = 0; j < n; j++) {
+            if (i > j) {
+              var normalized = T_total[i][j] / T_total_sum;
+              T_total[i][j] = normalized;
+              competenceArr[i].competence += normalized;
+              competenceArr[j].competence += normalized;
+            }
+          }
+        }
+
+        console.log(JSON.stringify(T_total));
+
+        // debugger;
+
+        return competenceArr;
       }
+
+      function createMatrix(m, n) {
+        var matrix = [];
+        for (var i = 0; i < m; i++) {
+          var row = [];
+          for (var j = 0; j < n; j++) {
+            row.push(0);
+          }
+          matrix.push(row);
+        }
+        return matrix;
+      }
+
+      function createCompetenceArray(experts) {
+        var arr = [];
+        experts.forEach(function(expert) {
+          arr.push({
+            "id": expert.id,
+            "name": expert.name,
+            "competence": 0
+          });
+        })
+        return arr;
+      }
+
+
     </script>
   </body>
 </html>
