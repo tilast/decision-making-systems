@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script type="text/javascript" src="./knockout-min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  </head>
+  <body>
+
+  <a href="#" data-bind="click: $root.setQuestionsTab" style="border-bottom: 1px dashed #ccc">Questions</a>
+  <a href="#" data-bind="click: $root.setExpertsTab" style="border-bottom: 1px dashed #ccc">Experts</a>
+  <a href="#" data-bind="click: $root.setStatisticsTab" style="border-bottom: 1px dashed #ccc">Statistics</a>
+
+  <div class="questions-tab" data-bind="visible: $root.tab() === 'questions'">
+    <h2>Questions</h2>
+    <form class="question-item col-sm-6">
+      <div class="form-group">
+        <input class="form-control" type="text" name="question-text" value="" placeholder="Question" data-bind='value: tempQuestion, valueUpdate: "afterkeydown"'>
+        <input class="form-control" type="text" name="question-text" value="" placeholder="Complexity" data-bind='value: tempComplexity, valueUpdate: "afterkeydown"'>
+      </div>
+
+      <ul data-bind="foreach: tempAnswers">
+        <li><span data-bind="text: $data.answer"></span>(<span data-bind="text: $data.correctness"></span>) <a href="#" data-bind="click: $root.removeTempAnswer">remove</a></li>
+      </ul>
+      <br/>
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="form-group">
+            <input class="form-control" type="text" data-bind='value: tempAnswer, valueUpdate: "afterkeydown"' name="question-text" value="" placeholder="Answer">
+            <input class="form-control" type="text" data-bind='value: tempCorrectness, valueUpdate: "afterkeydown"' name="question-text" value="" placeholder="Answer">
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <button type="button" name="add-answer" data-bind="click: $root.addTempAnswer" class="btn btn-default">Add Answer</button>
+        </div>
+      </div>
+
+      <br>
+      <button type="button" name="add-answer" data-bind="click: $root.saveQuestion" class="btn btn-default">Save Question</button>
+    </form>
+
+    <div class="col-sm-6">
+      <ul data-bind="foreach: questions">
+        <li>
+          <span data-bind="text: $data.question"> </span>(complexity: <span data-bind="text: $data.complexity"> </span>):
+          <br>
+          <ul data-bind="foreach: $data.answers">
+            <li><span data-bind="text: $data.answer"></span>(<span data-bind="text: $data.correctness"></span>)</li><br>
+          </ul>
+        </li>
+        <hr>
+      </ul>
+    </div>
+  </div>
+
+
+  <div class="experts" data-bind="visible: $root.tab() === 'experts'" style="margin-left: 20px;">
+    <h2>Answer here</h2>
+    <div class="row">      
+      <input type="text" placholder="Please input name" data-bind="value: expertName" class="form-control"><br>
+
+      <ul data-bind="foreach: questions">
+        <li>
+          <span data-bind="text: $data.question"> </span>(<span data-bind="text: $data.complexity"></span>):
+          <br>
+
+          <ul data-bind="foreach: $data.answers">
+            <li><span data-bind="text: $data.answer"> </span> <input type="radio" data-bind="value: $data.answer, checked: $parent.checked, attr: { name: $parent.id }"></li><br>
+          </ul>
+        </li>
+        <br>
+      </ul>
+    </div>
+
+    <div class="form-group">
+      <button data-bind="click: $root.submitQuiz" class="btn btn-success">Submit quiz</button>
+      <span data-bind="text: $root.submitQuizMessage"></span>
+    </div>
+  </div>
+
+  <div class="statistics" data-bind="visible: $root.tab() === 'statistics'">
+    <h2>Users grades</h2>
+
+    <ul data-bind="foreach: experts">
+      <li>
+        </span> <span data-bind="text: $data.name"></span>
+        <br>
+        Grade: <span data-bind="text: $data.competence"></span>
+      </li>
+      <hr>
+    </ul>
+  </div>
+
+
+    <script type="text/javascript">
+      function ViewModel() {
+        var self = this;
+
+        // TABS
+        this.tab = ko.observable('questions');
+        this.setQuestionsTab = function() {
+          self.tab('questions');
+        };
+        this.setExpertsTab = function() {
+          self.tab('experts');
+        };
+        this.setStatisticsTab = function() {
+          self.tab('statistics');
+        };
+
+        // QUESTIONS
+        // this.questions = ko.observableArray([
+        //   { id: +new Date(), question: 'Q1', answers: [{answer: 'a1', correctness: 0.5, origCorrectness: 5}, {answer: 'a2', correctness: 0.2, origCorrectness: 2}, {answer: 'a3', correctness: 0.3, origCorrectness: 3}], checked: ko.observable(''), complexity: ko.observable(0.9) }, { id: +new Date() + 100, complexity: ko.observable(0.2), question: 'Q2', answers: [{answer: 'a33', correctness: 0.5, origCorrectness: 5}, {answer: 'a22', correctness: 0.2, origCorrectness: 2}, {answer: 'a123', correctness: 0.3, origCorrectness: 3}], checked: ko.observable('') }]);
+
+        this.questions = ko.observableArray([
+          {
+            id: +new Date() + 1,
+            question: "kakoi vash lubimyy film?",
+            answers: [
+              {answer: "shrek", correctness: 0.1, origCorrectness: 0.1},
+              {answer: "kek", correctness: 0.5, origCorrectness: 0.5},
+              {answer: "piu", correctness: 0.2, origCorrectness: 0.2},
+              {answer: "lol", correctness: 0.2, origCorrectness: 0.2}
+            ],
+            checked: ko.observable(''), 
+            complexity: ko.observable(0.5)
+          },
+          {
+            id: +new Date() + 2,
+            question: "kakim po shchetu hokage byl naruto?",
+            answers: [
+              {answer: "5", correctness: 0.1, origCorrectness: 0.1},
+              {answer: "6", correctness: 0.1, origCorrectness: 0.1},
+              {answer: "7", correctness: 0.5, origCorrectness: 0.5},
+              {answer: "hz, lol", correctness: 0.3, origCorrectness: 0.3}
+            ],
+            checked: ko.observable(''), 
+            complexity: ko.observable(0.2)
+          },
+          {
+            id: +new Date() + 3,
+            question: "na kakih dereviah rastet kuraga?",
+            answers: [
+              {answer: "abricos", correctness: 0.25, origCorrectness: 0.25},
+              {answer: "vishnia", correctness: 0.2, origCorrectness: 0.2},
+              {answer: "kiev", correctness: 0.15, origCorrectness: 0.15},
+              {answer: "ya s odessy, ya prosto buhau", correctness: 0.4, origCorrectness: 0.4}
+            ],
+            checked: ko.observable(''), 
+            complexity: ko.observable(0.9)
+          },
+          {
+            id: +new Date() + 4,
+            question: "kakaya stolitsa parizha?",
+            answers: [
+              {answer: "evrosouz", correctness: 0.2, origCorrectness: 0.2},
+              {answer: "eliseiskie polya", correctness: 0.2, origCorrectness: 0.2},
+              {answer: "france", correctness: 0.05, origCorrectness: 0.05},
+              {answer: "croissan", correctness: 0.55, origCorrectness: 0.55}
+            ],
+            checked: ko.observable(''), 
+            complexity: ko.observable(0.3)
+          },
+          {
+            id: +new Date() + 5,
+            question: "nazovite vashe lubimoe chislo?",
+            answers: [
+              {answer: "pi v kvadrate", correctness: 0.7, origCorrectness: 0.7},
+              {answer: "desiat", correctness: 0.15, origCorrectness: 0.15},
+              {answer: "100500", correctness: 0.05, origCorrectness: 0.05},
+              {answer: "ya ne botan", correctness: 0.1, origCorrectness: 0.1}
+            ],
+            checked: ko.observable(''), 
+            complexity: ko.observable(0.7)
+          }
+        ]);
+
+        this.tempQuestion = ko.observable('');
+        this.saveQuestion = function() {
+          self.questions.push({
+            id: +new Date(),
+            question: self.tempQuestion(),
+            answers: self.tempAnswers(),
+            complexity: ko.observable(self.tempComplexity()),
+            checked: ko.observable('')
+          });
+          self.tempQuestion('');
+          self.tempAnswer('');
+          self.tempAnswers([]);
+          self.tempComplexity('');
+        };
+        this.tempAnswers = ko.observableArray([]);
+        this.tempAnswer = ko.observable('');
+        this.tempCorrectness = ko.observable(0);
+        this.tempComplexity = ko.observable(0);
+        this.addTempAnswer = function() {
+          self.tempAnswers.push({answer: self.tempAnswer(), correctness: +self.tempCorrectness(), origCorrectness: +self.tempCorrectness()});
+          self.recalculateCorrectness();
+          self.tempAnswer('');
+          self.tempCorrectness(0);
+        };
+        this.removeTempAnswer = function(taRemove) {
+          var indx = self.tempAnswers().findIndex(function(answr) {
+            return answr.answer == taRemove.answer;
+          });
+          self.tempAnswers.splice(indx, 1);
+        };
+
+        this.recalculateCorrectness = function() {
+          var sum = self.tempAnswers().reduce(function(a, e) { return +e.origCorrectness + a; }, 0);
+          var newAnswers = self.tempAnswers().map(function(answer) {
+            answer.correctness = answer.origCorrectness / sum;
+            return answer;
+          });
+          self.tempAnswers(newAnswers);
+        };
+
+        // EXPERTS
+        this.experts = ko.observableArray([]);
+        this.competences = ko.observableArray([]);
+        this.expertName = ko.observable('');
+        this.radioSelectedOptionValue = ko.observable('');
+        this.submitQuizMessage = ko.observable('');
+
+        this.submitQuiz = function() {
+          var questionsToUpdate = self.questions();
+          var expertsAnswers = self.questions().map(
+            (q) => q.answers.findIndex((a) => a.answer == q.checked())
+          );
+          var grade = getGradeAndAdaptQuestions(questionsToUpdate, expertsAnswers);
+
+          self.experts.push({
+            id: +new Date(),
+            name: self.expertName(),
+            answers: expertsAnswers,
+            competence: grade
+          });
+          // debugger
+          self.expertName('');
+          self.questions();
+          self.questions().forEach((q) => {
+            q.checked('');
+          });
+          self.submitQuizMessage('successfully added your answers');
+          setTimeout(() => {
+            self.submitQuizMessage('');
+          }, 1000);
+          console.log('submitted quiz');
+        };
+      };
+
+      ko.applyBindings(new ViewModel);
+
+      // region logic
+      function getGradeAndAdaptQuestions(questions, answers) {
+        var k = 1.0; // question deviation influence
+        var d = calculateGrade(questions, answers);
+        var m = questions.length;
+
+        for (var i = 0; i < questions.length; i++) {
+          var question = questions[i];
+          var chosen_answer_index = answers[i];
+
+          var v = question.answers[chosen_answer_index].correctness;
+          var max_v = getMaxCorrectness(question);
+          var min_v = getMinCorrectness(question);
+
+          var change = (1 / m) * (d * k * (max_v - v) - (1 - d) * k * (v - min_v));
+
+          var p = question.complexity();
+          p = p * (1 + change);
+          if (p > 1) {
+            p = 1;
+          } else if (p < 0) {
+            p = 0;
+          }
+          question.complexity(p);
+        }
+
+        return d;
+      }
+
+      function calculateGrade(questions, answers) {
+        var totalComplexity = 0.0;
+        var totalScores = 0.0;
+        for (var i = 0; i < questions.length; i++) {
+          var q = questions[i];
+          var p = q.complexity();
+          var chosen_answer_index = answers[i];
+
+          var v = q.answers[chosen_answer_index].correctness;
+          var max_v = getMaxCorrectness(q);
+          var min_v = getMinCorrectness(q);
+
+          var score = p * (v - min_v) / (max_v - min_v);
+
+          totalScores += score;
+          totalComplexity += p;
+        }
+
+        return totalScores / totalComplexity;
+      }
+
+      function getMaxCorrectness(question) {
+        var max = 0.0;
+        question.answers.forEach(function(a) {
+          if (a.correctness > max) {
+            max = a.correctness;
+          }
+        });
+        return max;
+      }
+
+      function getMinCorrectness(question) {
+        var min = 1.0;
+        question.answers.forEach(function(a) {
+          if (a.correctness < min) {
+            min = a.correctness;
+          }
+        });
+        return min;
+      }
+      // endregion
+    </script>
+  </body>
+</html>
